@@ -115,7 +115,7 @@ const SOURCES = [
   { id: 'gerencia', label: 'Gerencia', color: 'text-slate-600 bg-slate-50' }
 ];
 
-const MODELS = ['City', 'Civic', 'Accord', 'B-RV', 'HR-V', 'CR-V', 'Pilot','Odyssey', 'Seminuevo'];
+const MODELS = ['City', 'Civic', 'Accord', 'B-RV', 'HR-V', 'CR-V', 'Pilot','Odyssey', 'Seminuevo', 'Indefinido'];
 
 // Componente Principal
 export default function App() {
