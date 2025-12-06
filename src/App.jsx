@@ -250,6 +250,24 @@ export default function App() {
     }
   };
 
+  const handleDeleteLead = async (leadId) => {
+    if (!user) return;
+    
+    // Confirmación antes de borrar
+    if (!window.confirm('¿Estás seguro de eliminar este lead? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    
+    try {
+      const leadRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'leads', leadId);
+      await deleteDoc(leadRef);
+      setSelectedLead(null);
+    } catch (err) {
+      console.error("Error deleting lead:", err);
+      alert("Error al eliminar. Intenta nuevamente.");
+    }
+  };
+
   const handleUpdateStatus = async (leadId, newStatus, comment) => {
     if (!user) return;
     try {
@@ -458,6 +476,7 @@ export default function App() {
               onClose={() => setSelectedLead(null)} 
               onUpdateStatus={handleUpdateStatus}
               onAddComment={handleAddComment}
+              onDeleteLead={handleDeleteLead}
               currentUserRole={currentUserId === 'supervisor' ? 'Supervisor' : 'Asesor'}
             />
           )}
@@ -778,7 +797,7 @@ const NewLeadForm = ({ onSubmit, onCancel, isSupervisor, currentUserData }) => {
   );
 };
 
-const LeadDetailModal = ({ lead, onClose, onUpdateStatus, onAddComment, currentUserRole }) => {
+const LeadDetailModal = ({ lead, onClose, onUpdateStatus, onAddComment, onDeleteLead, currentUserRole }) => {
   const [comment, setComment] = useState('');
   const [newStatus, setNewStatus] = useState(lead.status);
   const sourceConfig = SOURCES.find(s => s.id === lead.source) || SOURCES[0];
@@ -813,6 +832,13 @@ const LeadDetailModal = ({ lead, onClose, onUpdateStatus, onAddComment, currentU
         <div className="p-4 md:p-6 border-b border-slate-200 bg-slate-50 relative">
           <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-2">
             <X size={24} />
+          </button>
+          <button 
+            onClick={() => onDeleteLead(lead.id)} 
+            className="absolute right-14 top-4 text-red-400 hover:text-red-600 p-2"
+            title="Eliminar lead"
+          >
+            <XCircle size={24} />
           </button>
           
           <div className="pr-10">
