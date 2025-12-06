@@ -711,7 +711,7 @@ const NewLeadForm = ({ onSubmit, onCancel, isSupervisor, currentUserData }) => {
           
           <div className="grid grid-cols-2 gap-4">
              <InputGroup label="Teléfono" type="tel" required 
-              value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+              value={formData.name} onChange={e => setFormData(prev => ({...prev, phone: e.target.value}))} />
              <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Modelo</label>
               <select 
@@ -725,7 +725,7 @@ const NewLeadForm = ({ onSubmit, onCancel, isSupervisor, currentUserData }) => {
           </div>
           
           <InputGroup label="Correo (Opcional)" type="email" 
-            value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            value={formData.email} onChange={e => setFormData(prev => ({...prev, email: e.target.value}))} />
 
           {/* Selector de Fuente */}
           <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
