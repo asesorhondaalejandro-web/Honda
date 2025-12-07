@@ -110,7 +110,7 @@ const SOURCES = [
   { id: 'gerencia', label: 'Gerencia', color: 'text-slate-600 bg-slate-50' }
 ];
 
-const MODELS = ['Indefinido', 'City', 'Civic', 'Accord', 'B-RV', 'HR-V', 'CR-V', 'Pilot','Odyssey', 'Seminuevo'];
+const MODELS = ['City', 'Civic', 'Accord', 'B-RV', 'HR-V', 'CR-V', 'Pilot','Odyssey', 'Seminuevo'];
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -349,6 +349,7 @@ export default function App() {
         
         const leadsCollection = collection(db, 'artifacts', APP_ID, 'public', 'data', 'leads');
         let imported = 0;
+        let errors = [];
 
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim());
@@ -358,32 +359,60 @@ export default function App() {
             leadData[header] = values[idx] || '';
           });
 
-          const advisor = getNextAdvisor();
+          // Detectar asesor del CSV
+          let advisor = null;
+          const advisorFromCSV = leadData.asesor || leadData.advisor || leadData.advisorname || leadData.asesorname;
           
-          await addDoc(leadsCollection, {
-            name: leadData.nombre || leadData.name || 'Sin nombre',
-            email: leadData.email || leadData.correo || '',
-            phone: leadData.telefono || leadData.phone || leadData.teléfono || '',
-            modelInterest: leadData.modelo || leadData.model || MODELS[0],
-            source: leadData.fuente || leadData.source || 'prospeccion',
-            advisorId: advisor.id,
-            advisorName: advisor.name,
-            status: leadData.status || leadData.estatus || 'new',
-            entryDate: leadData.fecha || leadData.date || new Date().toISOString(),
-            createdAt: serverTimestamp(),
-            isFavorite: false,
-            isArchived: true,
-            authorId: user.uid,
-            history: [{
-              type: 'system',
-              text: 'Lead importado desde CSV',
-              date: new Date().toISOString()
-            }]
-          });
-          imported++;
+          if (advisorFromCSV) {
+            // Buscar por nombre completo o parcial
+            advisor = ADVISORS.find(a => 
+              a.name.toLowerCase().includes(advisorFromCSV.toLowerCase()) ||
+              advisorFromCSV.toLowerCase().includes(a.name.toLowerCase().split(' ')[0].toLowerCase())
+            );
+            
+            // Si no se encuentra, buscar por ID
+            if (!advisor) {
+              advisor = ADVISORS.find(a => a.id === advisorFromCSV);
+            }
+          }
+          
+          // Si no hay asesor en CSV o no se encontró, asignar automáticamente
+          if (!advisor) {
+            advisor = getNextAdvisor();
+          }
+          
+          try {
+            await addDoc(leadsCollection, {
+              name: leadData.nombre || leadData.name || 'Sin nombre',
+              email: leadData.email || leadData.correo || '',
+              phone: leadData.telefono || leadData.phone || leadData.teléfono || '',
+              modelInterest: leadData.modelo || leadData.model || MODELS[0],
+              source: leadData.fuente || leadData.source || 'prospeccion',
+              advisorId: advisor.id,
+              advisorName: advisor.name,
+              status: leadData.status || leadData.estatus || 'new',
+              entryDate: leadData.fecha || leadData.date || new Date().toISOString(),
+              createdAt: serverTimestamp(),
+              isFavorite: false,
+              isArchived: true,
+              authorId: user.uid,
+              history: [{
+                type: 'system',
+                text: `Lead importado desde CSV${advisorFromCSV ? ` - Asesor original: ${advisorFromCSV}` : ''}`,
+                date: new Date().toISOString()
+              }]
+            });
+            imported++;
+          } catch (err) {
+            errors.push(`Línea ${i + 1}: ${leadData.nombre || 'Sin nombre'} - ${err.message}`);
+          }
         }
 
-        alert(`✅ ${imported} leads importados exitosamente al archivo`);
+        if (errors.length > 0) {
+          alert(`⚠️ ${imported} leads importados. ${errors.length} errores:\n${errors.slice(0, 3).join('\n')}`);
+        } else {
+          alert(`✅ ${imported} leads importados exitosamente al archivo`);
+        }
         setActiveTab('archive');
       } catch (err) {
         console.error("Error importing CSV:", err);
@@ -868,6 +897,7 @@ const FavoritesView = ({ leads, onSelect, onToggleFavorite }) => {
 const ArchiveView = ({ leads, onSelect, onToggleArchive, onImportCSV }) => {
   const fileInputRef = useRef(null);
   const [groupBy, setGroupBy] = useState('month');
+  const [showCSVHelp, setShowCSVHelp] = useState(false);
 
   const groupedLeads = useMemo(() => {
     const groups = {};
@@ -899,6 +929,21 @@ const ArchiveView = ({ leads, onSelect, onToggleArchive, onImportCSV }) => {
     }
   };
 
+  const downloadTemplate = () => {
+    const template = `nombre,telefono,email,modelo,fuente,fecha,asesor,estatus
+Juan Pérez,4421234567,juan@email.com,Civic,hdm,2024-01-15,Alejandro Hurtado,new
+María López,4427654321,maria@email.com,CR-V,redes,2024-01-20,Triana Montes,contacted
+Carlos Ruiz,4423456789,carlos@email.com,HR-V,prospeccion,2024-02-01,Jonathan Rodriguez,lost`;
+    
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'plantilla_leads.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-4 animate-fade-in pb-10">
       <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
@@ -920,6 +965,14 @@ const ArchiveView = ({ leads, onSelect, onToggleArchive, onImportCSV }) => {
               className="hidden"
             />
             <button
+              onClick={() => setShowCSVHelp(!showCSVHelp)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 text-sm font-medium"
+              title="Ver formato CSV"
+            >
+              <Download size={16} />
+              Plantilla
+            </button>
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
             >
@@ -937,6 +990,57 @@ const ArchiveView = ({ leads, onSelect, onToggleArchive, onImportCSV }) => {
           </div>
         </div>
       </div>
+
+      {showCSVHelp && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 animate-fade-in">
+          <div className="flex justify-between items-start mb-3">
+            <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+              <Download size={18} />
+              Formato del CSV
+            </h4>
+            <button onClick={() => setShowCSVHelp(false)} className="text-blue-600">
+              <X size={18} />
+            </button>
+          </div>
+          
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="font-medium text-blue-800 mb-1">Columnas requeridas:</p>
+              <code className="block bg-white p-2 rounded text-xs overflow-x-auto border border-blue-200">
+                nombre,telefono,email,modelo,fuente,fecha,asesor,estatus
+              </code>
+            </div>
+
+            <div>
+              <p className="font-medium text-blue-800 mb-1">Valores de asesor (opcionales):</p>
+              <ul className="text-xs text-blue-700 space-y-1 ml-4">
+                {ADVISORS.map(adv => (
+                  <li key={adv.id}>• {adv.name} o {adv.id}</li>
+                ))}
+                <li className="text-blue-500 italic">• Si no se especifica o no coincide, se asigna automáticamente</li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="font-medium text-blue-800 mb-1">Valores de fuente:</p>
+              <p className="text-xs text-blue-700">hdm, redes, prospeccion, piso, whatsapp, llamada, gerencia</p>
+            </div>
+
+            <div>
+              <p className="font-medium text-blue-800 mb-1">Valores de estatus:</p>
+              <p className="text-xs text-blue-700">new, contacted, appointment, visit, negotiation, sold, lost</p>
+            </div>
+
+            <button
+              onClick={downloadTemplate}
+              className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            >
+              <Download size={16} />
+              Descargar Plantilla de Ejemplo
+            </button>
+          </div>
+        </div>
+      )}
 
       {leads.length === 0 ? (
         <div className="bg-white rounded-xl p-10 text-center border border-slate-200">
@@ -973,6 +1077,7 @@ const ArchiveView = ({ leads, onSelect, onToggleArchive, onImportCSV }) => {
                           <p className="font-semibold text-slate-800">{lead.name}</p>
                           <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
                             <span className="flex items-center gap-1"><Car size={12}/>{lead.modelInterest}</span>
+                            <span className="text-xs text-slate-400">{lead.advisorName}</span>
                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusConfig.color}`}>
                               {statusConfig.label}
                             </span>
