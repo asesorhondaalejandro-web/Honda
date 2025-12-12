@@ -65,15 +65,25 @@ const getFirebaseConfig = () => {
   if (typeof __firebase_config !== 'undefined') {
     return JSON.parse(__firebase_config);
   }
-  return {
-    apiKey: "AIzaSyBbfZXYcBhg8xrBQ4i7LhKqmk7CZUz715Y",
-    authDomain: "honda-crm-ventas.firebaseapp.com",
-    projectId: "honda-crm-ventas",
-    storageBucket: "honda-crm-ventas.firebasestorage.app",
-    messagingSenderId: "186941272958",
-    appId: "1:186941272958:web:9c5b73554a2d897c19b92f",
-    measurementId: "G-FWBEN09R85"
+  
+  // En producción, usar variables de entorno (configuradas en Netlify)
+  const config = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
   };
+  
+  // Validar que las variables estén configuradas
+  if (!config.apiKey || !config.projectId) {
+    console.error('Firebase config missing. Please set environment variables in Netlify.');
+    console.error('Required: VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, etc.');
+  }
+  
+  return config;
 };
 
 const config = getFirebaseConfig();
