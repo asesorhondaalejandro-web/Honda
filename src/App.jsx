@@ -83,6 +83,7 @@ const getFirebaseConfig = () => {
     console.error('Required: VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, etc.');
   }
   
+  
   return config;
 };
 
