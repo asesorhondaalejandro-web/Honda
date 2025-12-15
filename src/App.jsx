@@ -735,7 +735,8 @@ const LeadsListView = ({ leads, onSelect, onToggleFavorite, onToggleArchive, isS
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          lead.email?.toLowerCase().includes(searchTerm.toLowerCase());
+                          lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          lead.phone?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
