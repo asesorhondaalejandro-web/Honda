@@ -61,6 +61,16 @@ import {
   deleteDoc
 } from "firebase/firestore";
 
+import NavButton from './components/atoms/NavButton';
+import DashboardView from './components/organisms/DashboardView';
+import LeadsListView from './components/organisms/LeadsListView';
+import FavoritesView from './components/organisms/FavoritesView';
+import ArchiveView from './components/organisms/ArchiveView';
+import NewLeadForm from './components/organisms/NewLeadForm';
+import LeadDetailModal from './components/organisms/LeadDetailModal';
+import LoginModal from './components/organisms/LoginModal';
+import { ADVISORS, STATUS_FLOW, SOURCES, MODELS } from './components/constants';
+
 const getFirebaseConfig = () => {
   if (typeof __firebase_config !== 'undefined') {
     return JSON.parse(__firebase_config);
@@ -92,14 +102,6 @@ const app = initializeApp(config);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'honda-crm-v1';
-import NavButton from './components/atoms/NavButton';
-import DashboardView from './components/organisms/DashboardView';
-import LeadsListView from './components/organisms/LeadsListView';
-import FavoritesView from './components/organisms/FavoritesView';
-import ArchiveView from './components/organisms/ArchiveView';
-import NewLeadForm from './components/organisms/NewLeadForm';
-import LeadDetailModal from './components/organisms/LeadDetailModal';
-import { ADVISORS, STATUS_FLOW, SOURCES, MODELS } from './components/constants';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -109,7 +111,8 @@ export default function App() {
   const [selectedLead, setSelectedLead] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [error, setError] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState('supervisor');
+  // currentUserId is null until user logs in via LoginModal
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -546,10 +549,11 @@ export default function App() {
             </div>
             
             <select 
-              value={currentUserId}
+              value={currentUserId || ''}
               onChange={(e) => setCurrentUserId(e.target.value)}
               className="w-full bg-slate-900 text-slate-300 text-xs py-2 px-3 rounded border border-slate-700 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
             >
+              <option value="">Vista: (seleccionar)</option>
               <option value="supervisor">Vista: Supervisor</option>
               <optgroup label="Asesores">
                 {ADVISORS.map(adv => (
@@ -602,6 +606,9 @@ export default function App() {
           )}
         </main>
       </div>
+      {!currentUserId && (
+        <LoginModal onLogin={(id) => setCurrentUserId(id)} advisors={ADVISORS} />
+      )}
     </>
   );
 }

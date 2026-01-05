@@ -62,9 +62,24 @@ const LeadDetailModal = ({ lead, onClose, onUpdateStatus, onAddComment, onDelete
                <span>{lead.phone}</span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Ingreso: {lead.entryDate instanceof Date 
-                ? lead.entryDate.toLocaleDateString()
-                : new Date(lead.entryDate).toLocaleDateString()}
+              Ingreso: {(() => {
+                // Si ya es un objeto Date
+                if (lead.entryDate instanceof Date) {
+                  return lead.entryDate.toLocaleDateString();
+                }
+
+                // Si es un string tipo "2025-09-15"
+                if (typeof lead.entryDate === 'string' && lead.entryDate.includes('-')) {
+                  const [year, month, day] = lead.entryDate.split('-').map(Number);
+                  // El mes en JS empieza en 0 (Enero es 0, Septiembre es 8)
+                  const dateObj = new Date(year, month - 1, day);
+                  return dateObj.toLocaleDateString();
+                }
+              
+                // Fallback para otros formatos
+                const fallbackDate = new Date(lead.entryDate);
+                return isNaN(fallbackDate.getTime()) ? "Fecha inválida" : fallbackDate.toLocaleDateString();
+              })()}
             </p>
           </div>
 
