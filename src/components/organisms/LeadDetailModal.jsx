@@ -63,22 +63,40 @@ const LeadDetailModal = ({ lead, onClose, onUpdateStatus, onAddComment, onDelete
             </div>
             <p className="text-xs text-slate-400 mt-1">
               Ingreso: {(() => {
-                // Si ya es un objeto Date
-                if (lead.entryDate instanceof Date) {
-                  return lead.entryDate.toLocaleDateString();
-                }
+                try {
+                  let dateObj;
+                
+                  if (lead.entryDate instanceof Date) {
+                    dateObj = lead.entryDate;
+                  } else if (typeof lead.entryDate === 'string') {
+                    // Separamos el string "2025-01-04" por el guion
+                    const parts = lead.entryDate.split('-');
 
-                // Si es un string tipo "2025-09-15"
-                if (typeof lead.entryDate === 'string' && lead.entryDate.includes('-')) {
-                  const [year, month, day] = lead.entryDate.split('-').map(Number);
-                  // El mes en JS empieza en 0 (Enero es 0, Septiembre es 8)
-                  const dateObj = new Date(year, month - 1, day);
-                  return dateObj.toLocaleDateString();
+                    // Verificamos que tengamos 3 partes (Año, Mes, Día)
+                    if (parts.length === 3) {
+                      const year = parseInt(parts[0], 10);
+                      const month = parseInt(parts[1], 10) - 1; // Restamos 1 porque Enero es 0
+                      const day = parseInt(parts[2], 10);
+
+                      // Creamos la fecha usando componentes locales (esto evita desfases de horario)
+                      dateObj = new Date(year, month, day);
+                    } else {
+                      dateObj = new Date(lead.entryDate);
+                    }
+                  }
+                
+                  // Validamos si la fecha es válida antes de mostrarla
+                  if (!dateObj || isNaN(dateObj.getTime())) return "Fecha no válida";
+                
+                  // Forzamos el formato español/latino para estar seguros: Día/Mes/Año
+                  return dateObj.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  });
+                } catch (e) {
+                  return "Error en fecha";
                 }
-              
-                // Fallback para otros formatos
-                const fallbackDate = new Date(lead.entryDate);
-                return isNaN(fallbackDate.getTime()) ? "Fecha inválida" : fallbackDate.toLocaleDateString();
               })()}
             </p>
           </div>
