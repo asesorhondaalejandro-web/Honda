@@ -1,5 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { Archive, Download, Upload, X } from 'lucide-react';
+import { Archive, Download, Upload, X, Car } from 'lucide-react';
 import { ADVISORS, SOURCES, STATUS_FLOW } from '../constants';
 
 const ArchiveView = ({ leads, onSelect, onToggleArchive, onImportCSV }) => {
